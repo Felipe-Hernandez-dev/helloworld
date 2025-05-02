@@ -1,11 +1,21 @@
 pipeline {
     agent any
 
-    stages {
-        stage('Hello') {
-            steps {
-                echo 'Hello World'
+    stages{
+         stage('solo hago un echo'){
+            steps{
+                echo "primera tarea en mi pipeline"
+                git 'https://github.com/Felipe-Hernandez-dev/helloworld'
+                bat 'dir'
+                echo WORKSPACE
             }
         }
-    }
+          stage('BUILD'){
+            steps{
+                echo "Este Build no hace nada"
+                bat 'hostname'
+                bat 'whoami'
+            }
+        }  
+    }                      
 }
