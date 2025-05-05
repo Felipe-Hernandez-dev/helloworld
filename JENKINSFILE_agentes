@@ -1,0 +1,152 @@
+pipeline {
+    agent any
+
+    stages {
+        stage ('Ejecucion nodo principal') {
+            steps {
+                cleanWs() 
+                pwsh 'echo $env:COMPUTERNAME'
+                echo "Ruta del workspace: ${env.WORKSPACE}"
+                git url: 'https://github.com/Felipe-Hernandez-dev/helloworld.git', branch: 'develop'
+                pwsh 'Get-ChildItem -Recurse -Path $env:WORKSPACE'
+                stash includes: '**/*', name: 'repo-clonado'
+                pwsh 'Copy-Item -Recurse -Path "C:\\Users\\Programer\\Documents\\work_space\\Wiremook" -Destination "$env:WORKSPACE\\Wiremook" -Force'
+                stash  includes: 'Wiremook/**', name: 'wiremock'
+            }
+        }
+
+        stage ('Nombres de los dos Agentes Linux') {
+            parallel {
+                stage (Agent1) {
+                    agent { label 'Linux-Agent1' }
+                    steps {
+                        sh 'echo "Hostname: $(hostname), Usuario: $(whoami)"'
+                        unstash 'repo-clonado'
+                    }
+                }
+                stage (Agent2) {
+                    agent { label 'Linux-Agent2' }
+                    steps {
+                        sh 'echo "Hostname: $(hostname), Usuario: $(whoami)"'
+                        unstash 'repo-clonado'
+                    }
+                }
+            }
+        }
+        stage ('Unit') {
+            agent { label 'Linux-Agent1' }
+        steps {
+            sh '''
+                   export PYTHONPATH="."
+                   pytest --junitxml=result-rest.xml test/unit
+                   echo "Hostname: $(hostname), Usuario: $(whoami)"
+               '''
+        }
+        }
+
+        stage ('Service') {
+            agent { label 'Linux-Agent1' }
+
+            environment {
+                JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
+                PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
+            }
+            steps {
+                unstash 'wiremock'
+                sh '''
+                export FLASK_APP=app/api.py
+                export PYTHONPATH=.
+                flask run &
+                nohup java -jar Wiremook/wiremock-standalone-3.13.0.jar \
+                --port 9090 \
+                --verbose \
+                --root-dir test/wiremock > wiremock.log 2>&1 &
+                sleep 5
+                pytest --junitxml=result-rest-1.xml test/rest &
+                echo "Hostname: $(hostname), Usuario: $(whoami)"
+            '''
+            stash  includes: 'result-rest-1.xml', name: 'result1'
+            }
+        }
+
+        stage ('Result') {
+            steps {
+                unstash 'result1'
+                junit 'result-rest-1.xml'
+            }
+        }
+
+        stage ('Ejecuciones en Paralelo') {
+            parallel {
+            stage ('Unit') {
+                agent { label 'Linux-Agent2' }
+                steps {
+                    sh '''
+                     export PYTHONPATH="."
+                     pytest --junitxml=result-rest.xml test/unit
+                     echo "Hostname: $(hostname), Usuario: $(whoami)"
+                 '''
+                }
+            }
+
+            stage ('Service') {
+                agent { label 'Linux-Agent2' }
+                environment {
+                    JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
+                    PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
+                }
+                steps {
+                    dir('/home/wakfu-server/agent1/jenkins/workspace/Integracion_Continua/Trabajo CP1/test2') {
+                        unstash 'wiremock'
+                        sh '''
+                        echo "Verificando el entorno Linux..."
+                        export FLASK_APP=app/api.py
+                        export PYTHONPATH=.
+                        nohup flask run &
+                        nohup java -jar Wiremook/wiremock-standalone-3.13.0.jar \
+                        --port 9090 \
+                        --verbose \
+                        --root-dir test/wiremock > wiremock.log 2>&1 &
+                        sleep 5                            
+                        pytest --junitxml=result-rest-2.xml test/rest &
+                        echo "Hostname: $(hostname), Usuario: $(whoami)"
+                    '''
+                stash includes: 'result-rest-2.xml', name: 'result2'
+                        
+                    }
+                }
+            }
+        }
+    }
+        stage ('Result Agent2') {
+            steps {
+                unstash 'result2'
+                junit 'result-rest-2.xml'
+            }
+        }
+        stage ('Limpieza Workspace'){
+            parallel{
+                stage('Limpiar agent1'){
+                    agent {label 'Linux-Agent1'}
+                    steps{
+                        sh ''' 
+                            echo "Limpiando el workspace del agente 1"
+                            rm -rf ${WORKSPACE}/*
+                            echo "Hostname: $(hostname), Usuario: $(whoami)"
+                        '''
+                    }
+                }
+                stage('Limpiar agent2'){
+                    agent {label 'Linux-Agent2'}
+                    steps{
+                        sh ''' 
+                            echo "Limpiando el workspace del agente 2"
+                            rm -rf ${WORKSPACE}/*
+                            echo "Hostname: $(hostname), Usuario: $(whoami)"
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}
