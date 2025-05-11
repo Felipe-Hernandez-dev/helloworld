@@ -21,14 +21,14 @@ pipeline {
                     agent { label 'Agent1' }
                     steps {
                         sh 'echo "Hostname: $(hostname), Usuario: $(whoami)"'
-                        unstash 'repo-clonado'
+                        
                     }
                 }
                 stage (Agent2) {
                     agent { label 'Agent2' }
                     steps {
                         sh 'echo "Hostname: $(hostname), Usuario: $(whoami)"'
-                        unstash 'repo-clonado'
+                        
                     }
                 }
             }
@@ -52,6 +52,7 @@ pipeline {
                 PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
             }
             steps {
+                unstash 'repo-clonado'
                 unstash 'wiremock'
                 sh '''
                 export FLASK_APP=app/api.py
@@ -96,6 +97,7 @@ pipeline {
                     PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
                 }
                 steps {                    
+                        unstash 'repo-clonado'
                         unstash 'wiremock'
                         sh '''
                         echo "Verificando el entorno Linux..."
