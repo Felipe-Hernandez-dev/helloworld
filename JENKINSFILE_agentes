@@ -95,8 +95,7 @@ pipeline {
                     JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
                     PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
                 }
-                steps {
-                    dir('/home/wakfu-server/agent1/jenkins/workspace/Integracion_Continua/Trabajo CP1/test2') {
+                steps {                    
                         unstash 'wiremock'
                         sh '''
                         echo "Verificando el entorno Linux..."
@@ -113,7 +112,7 @@ pipeline {
                     '''
                 stash includes: 'result-rest-2.xml', name: 'result2'
                         
-                    }
+                    
                 }
             }
         }
