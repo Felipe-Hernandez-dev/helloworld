@@ -44,7 +44,7 @@ pipeline {
         }
         }
 
-        stage ('Service') {
+        stage ('Services') {
             agent { label 'Linux-Agent1' }
 
             environment {
