@@ -10,7 +10,7 @@ pipeline {
                 git url: 'https://github.com/Felipe-Hernandez-dev/helloworld.git', branch: 'develop'
                 pwsh 'Get-ChildItem -Recurse -Path $env:WORKSPACE'
                 stash includes: '**/*', name: 'repo-clonado'
-                pwsh 'Copy-Item -Recurse -Path "C:\\Users\\Programer\\Documents\\work_space\\Wiremook" -Destination "$env:WORKSPACE\\Wiremook" -Force'
+                pwsh 'Copy-Item -Recurse -Path "C:\\Users\\bftov\\Documents\\WorkSpace\\Wiremook" -Force'
                 stash  includes: 'Wiremook/**', name: 'wiremock'
             }
         }
