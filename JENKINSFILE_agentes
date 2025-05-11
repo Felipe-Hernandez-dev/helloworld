@@ -18,14 +18,14 @@ pipeline {
         stage ('Nombres de los dos Agentes Linux') {
             parallel {
                 stage (Agent1) {
-                    agent { label 'Linux-Agent1' }
+                    agent { label 'Agent1' }
                     steps {
                         sh 'echo "Hostname: $(hostname), Usuario: $(whoami)"'
                         unstash 'repo-clonado'
                     }
                 }
                 stage (Agent2) {
-                    agent { label 'Linux-Agent2' }
+                    agent { label 'Agent2' }
                     steps {
                         sh 'echo "Hostname: $(hostname), Usuario: $(whoami)"'
                         unstash 'repo-clonado'
@@ -34,7 +34,7 @@ pipeline {
             }
         }
         stage ('Unit') {
-            agent { label 'Linux-Agent1' }
+            agent { label 'Agent1' }
         steps {
             sh '''
                    export PYTHONPATH="."
@@ -45,7 +45,7 @@ pipeline {
         }
 
         stage ('Service') {
-            agent { label 'Linux-Agent1' }
+            agent { label 'Agent1' }
 
             environment {
                 JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
@@ -79,7 +79,7 @@ pipeline {
         stage ('Ejecuciones en Paralelo') {
             parallel {
             stage ('Unit') {
-                agent { label 'Linux-Agent2' }
+                agent { label 'Agent2' }
                 steps {
                     sh '''
                      export PYTHONPATH="."
@@ -90,7 +90,7 @@ pipeline {
             }
 
             stage ('Service') {
-                agent { label 'Linux-Agent2' }
+                agent { label 'Agent2' }
                 environment {
                     JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
                     PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
@@ -127,7 +127,7 @@ pipeline {
         stage ('Limpieza Workspace'){
             parallel{
                 stage('Limpiar agent1'){
-                    agent {label 'Linux-Agent1'}
+                    agent {label 'Agent1'}
                     steps{
                         sh ''' 
                             echo "Limpiando el workspace del agente 1"
@@ -137,7 +137,7 @@ pipeline {
                     }
                 }
                 stage('Limpiar agent2'){
-                    agent {label 'Linux-Agent2'}
+                    agent {label 'Agent2'}
                     steps{
                         sh ''' 
                             echo "Limpiando el workspace del agente 2"
