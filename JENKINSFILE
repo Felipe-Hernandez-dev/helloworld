@@ -6,42 +6,37 @@ pipeline {
             steps {
                 echo 'primera tarea en mi pipeline'
                 git 'https://github.com/Felipe-Hernandez-dev/helloworld'
-                bat 'dir'
-                echo WORKSPACE
+                sh 'ls -la'
+                echo "${env.WORKSPACE}"
             }
         }
         stage('BUILD') {
             steps {
                 echo 'Este Build muestra mi hostname'
-                bat 'hostname'
+                sh 'hostname'
             }
         }
         stage('Ejecuciones en Paralelo') {
             parallel {
                 stage('Unit') {
                     steps {
-                        pwsh '''
-                   $env:PYTHONPATH="."
-                   pytest --junitxml=result-rest.xml test\\unit
-               '''
+                        sh '''
+                        export PYTHONPATH="."
+                        pytest --junitxml=result-rest.xml test/unit
+                        '''
                     }
                 }
-                stage('Service') {
+                stage ('Service'){
                     steps {
-                        pwsh '''
-                   $env:FLASK_APP = "app\\api.py"
-                   Start-Process flask run
-                   Start-Process -FilePath "C:\\Program Files\\Java\\jdk-17\\bin\\java.exe" "-jar C:\\Users\\Devops\\Documents\\WorkSpace\\Wiremook\\wiremock-standalone-3.13.0.jar --port 9090 --verbose --root-dir test\\wiremock "
-                   $env:PYTHONPATH="."
-                   pytest --junitxml=result-rest.xml test\\rest
-               '''
+                        sh '''
+                        export FLASK_APP=app/apy
+                        nohup flask run &
+                        nohub java -jar /home/arkam/wiremock/wiremock-standalone-3.13.0.jar --port 9090 --vervose --root-dir test/wiremock &
+                        export PYTHONPATH=.
+                        pytest --junitxml=result-rest.xml test/unit
+                        '''
                     }
                 }
-            }
-        }
-        stage('Result') {
-            steps {
-                junit 'result*.xml'
             }
         }
     }
