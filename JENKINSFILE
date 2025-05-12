@@ -31,7 +31,7 @@ pipeline {
                         pwsh '''
                    $env:FLASK_APP = "app\\api.py"
                    Start-Process flask run
-                   Start-Process -FilePath "C:\\Users\\Programmer\\Documents\\WorkSpace\\Wiremook\\wiremock-standalone-3.13.0.jar --port 9090 --verbose --root-dir test\\wiremock "
+                   Start-Process -FilePath "C:\\Program Files\\Java\\jdk-17\\bin\\java.exe" "-jar C:\\Users\\Devops\\Documents\\WorkSpace\\Wiremook\\wiremock-standalone-3.13.0.jar --port 9090 --verbose --root-dir test\\wiremock "
                    $env:PYTHONPATH="."
                    pytest --junitxml=result-rest.xml test\\rest
                '''
