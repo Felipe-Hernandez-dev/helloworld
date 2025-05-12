@@ -39,5 +39,10 @@ pipeline {
                 }
             }
         }
+        stage ('Result') {
+            steps{
+                junit "result-rest.xml"
+            }
+        }
     }
 }
