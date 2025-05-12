@@ -3,8 +3,7 @@ pipeline {
 
     stages {
         stage ('Ejecucion nodo principal') {
-            steps {                
-                cleanWs() 
+            steps { 
                 pwsh 'echo $env:COMPUTERNAME'
                 echo "Ruta del workspace: ${env.WORKSPACE}"
                 git url: 'https://github.com/Felipe-Hernandez-dev/helloworld', branch: 'develop'
