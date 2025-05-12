@@ -7,7 +7,7 @@ pipeline {
                 cleanWs() 
                 pwsh 'echo $env:COMPUTERNAME'
                 echo "Ruta del workspace: ${env.WORKSPACE}"
-                git url: 'https://github.com/Felipe-Hernandez-dev/helloworld.git', branch: 'develop'
+                git url: 'https://github.com/Felipe-Hernandez-dev/helloworld', branch: 'develop'
                 pwsh 'Get-ChildItem -Recurse -Path $env:WORKSPACE'
                 stash includes: '**/*', name: 'repo-clonado'
                 pwsh 'Copy-Item -Recurse -Path "C:\\Users\\Devops\\Documents\\WorkSpace\\Wiremook" -Destination $env:WORKSPACE -Force'
