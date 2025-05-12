@@ -9,7 +9,7 @@ pipeline {
                 echo "Ruta del workspace: ${env.WORKSPACE}"
                 git url: 'https://github.com/Felipe-Hernandez-dev/helloworld.git', branch: 'develop'
                 pwsh 'Get-ChildItem -Recurse -Path $env:WORKSPACE'
-                stash includes: '**/*', excludes: '.git/**', name: 'repo-clonado'
+                stash includes: '**/*', name: 'repo-clonado'
                 pwsh 'Copy-Item -Recurse -Path "C:\\Users\\Devops\\Documents\\WorkSpace\\Wiremook" -Destination $env:WORKSPACE -Force'
                 stash includes: 'Wiremook/**', name: 'wiremock'
             }
