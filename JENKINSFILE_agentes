@@ -27,7 +27,7 @@ pipeline {
                     }
                 }
                 stage ('Agent2 Info') {
-                    agent { label 'Agent2' }
+                    agent { label 'Linux-agent2' }
                     steps {                        
                         sh '''
                             set -e

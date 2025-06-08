@@ -2,46 +2,88 @@ pipeline {
     agent any
 
     stages {
-        stage('solo hago un echo') {
+        stage('Copy Repo') {
             steps {
-                echo 'primera tarea en mi pipeline'
                 git 'https://github.com/Felipe-Hernandez-dev/helloworld'
                 sh 'ls -la'
                 echo "${env.WORKSPACE}"
             }
         }
-        stage('BUILD') {
+
+        stage('Setup Services') {
             steps {
-                echo 'Este Build muestra mi hostname'
-                sh 'hostname'
+                script {                    
+                    env.FLASK_PID = sh(script: '''
+                        export FLASK_APP=app/api
+                        nohup flask run > flask.log 2>&1 &
+                        echo $!
+                    ''', returnStdout: true).trim()                    
+                    env.WIREMOCK_PID = sh(script: '''
+                        nohup java -jar /mnt/c/Users/SRE-DEVOPS/Documents/WorkSpace/Wiremook/wiremock-standalone-3.13.0.jar --port 9090 --verbose --root-dir test/wiremock > wiremock.log 2>&1 &
+                        echo $!
+                    ''', returnStdout: true).trim()                    
+                    sh 'sleep 10'
+                }
             }
         }
-        stage('Ejecuciones en Paralelo') {
-            parallel {
-                stage('Unit') {
+        stage ('Rest'){
                     steps {
-                        sh '''
-                        export PYTHONPATH="."
-                        pytest --junitxml=result-rest.xml test/unit
-                        '''
-                    }
-                }
-                stage ('Service'){
-                    steps {
-                        sh '''
-                        export FLASK_APP=app/apy
-                        nohup flask run &
-                        nohub java -jar /home/arkam/wiremock/wiremock-standalone-3.13.0.jar --port 9090 --vervose --root-dir test/wiremock &
+                        sh '''                        
                         export PYTHONPATH=.
                         pytest --junitxml=result-rest.xml test/unit
-                        '''
+                    '''
+                    junit "result-rest.xml"
+                    }
+                }
+       
+        stage ('Static'){
+            steps{
+                sh '''
+                flake8 --format=pylint --exit-zero app >flake8.out          
+            '''
+            recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], qualityGates: [[threshold:
+            8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]
+            }
+        }
+       stage ('Security') {
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh '''
+                        bandit -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}" || true
+                    '''
+                    recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates: [
+                        [threshold: 2, type: 'TOTAL', unstable: true],
+                        [threshold: 4, type: 'TOTAL', unstable: false]
+                        ]
                     }
                 }
             }
-        }
-        stage ('Result') {
+        stage ('Performance'){
             steps{
-                junit "result-rest.xml"
+                sh '''
+                /mnt/c/Users/SRE-DEVOPS/Documents/WorkSpace/jmeter/apache-jmeter-5.6.3/bin/jmeter.sh -n -t test/jmeter/flask.jmx -f -l flask.jtl
+            '''
+            perfReport sourceDataFiles: 'flask.jtl'
+            }
+        }    
+              
+        stage ('Coverage') {
+            steps{
+                catchError(buildResult: 'UNSTABLE', stageResult:'FAILURE'){
+                    sh ''' 
+                    export PYTHONPATH="."
+                    python3 -m coverage run --branch --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit
+                    python3 -m coverage xml
+                '''
+                recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']],
+                                    qualityGates: [
+                                        [threshold: 95.0, metric: 'LINE', baseline: 'PROJECT', criticality: 'NOTE'],
+                                        [threshold: 85.0, metric: 'LINE', baseline: 'PROJECT', criticality: 'FAILURE'],
+                                        [threshold: 90.0, metric: 'BRANCH', baseline: 'PROJECT', criticality: 'NOTE'],
+                                        [threshold: 80.0, metric: 'BRANCH', baseline: 'PROJECT', criticality: 'FAILURE']
+                                    ]
+                                  )
+                }
             }
         }
     }
