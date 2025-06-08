@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Copy Repo') {
             steps {
-                git 'https://github.com/Felipe-Hernandez-dev/helloworld' branch: 'feature_fix_coverage'
+                git 'https://github.com/Felipe-Hernandez-dev/helloworld', branch: 'feature_fix_coverage'
                 sh 'ls -la'
                 echo "${env.WORKSPACE}"
             }
